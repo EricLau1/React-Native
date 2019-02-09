@@ -1,0 +1,87 @@
+Gerando APK No React-Native
+
+https://facebook.github.io/react-native/docs/signed-apk-android#docsNav
+
+Acesse a pasta do projeto.
+
+Va com o terminal na pasta:
+
+$ cd android/app/
+
+Execute o comando do site:
+
+É NECESSÀRIO FAZER UMAS MODIFICAÇôES NO COMANDO!
+
+COMANDO ORIGINAL:
+
+	$ keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+
+COMANDO MODIFICADO INFORMANDO O NOME DO APK(hunt) NOS PARAMETROS:
+
+	$ keytool -genkey -v -keystore hunt.keystore -alias hunt -keyalg RSA -keysize 2048 -validity 10000
+
+Será necessário criar uma chave.
+
+Para exemplo utilizei: 123456
+
+Responda as perguntas.
+
+Será necessário digitar as senhas novamente.
+
+Dentro do projeto edite o seguinte arquivo:
+
+	android/gradle.properties
+
+	Adicione o código:
+
+	MYAPP_RELEASE_STORE_FILE=hunt.keystore
+	MYAPP_RELEASE_KEY_ALIAS=hunt
+	MYAPP_RELEASE_STORE_PASSWORD=123456
+	MYAPP_RELEASE_KEY_PASSWORD=123456
+
+EDITE O ARQUIVO => android/app/build.gradle, e ADICIONE O CÓDIGO:
+
+...
+android {
+    ...
+    defaultConfig { ... }
+    
+    ** O Bloco Abaixo deve estar abaixo do Bloco acima **
+
+    signingConfigs {
+        release {
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
+
+    ** Procure pelo block Abaixo e adicione o parâmetro **
+
+    buildTypes {
+        release {
+            ...
+            signingConfig signingConfigs.release
+        }
+    }
+}
+...
+
+
+Agora faça os Seguintes Comandos:
+
+$ cd android
+
+$ ./gradlew assembleRelease
+
+O APK será gerado na pasta dentro do projeto: 
+
+	../android/app/build/outputs/apk/release/
+
+
+
+
+
