@@ -1,0 +1,381 @@
+Consumindo Api com React-Native
+
+$ react-native init api
+
+$ cd api
+
+$ react-native run-android
+
+
+Editando o arquivo 'App.js':
+
+	import React, {Component} from 'react';
+	import { StyleSheet, Text, View} from 'react-native';
+	
+	export default class App extends Component {
+	  render() {
+	    return (
+	      <View style={styles.container}>
+	        <Text style={styles.welcome}>Welcome to React Native!</Text>
+	      </View>
+	    );
+	  }
+	}
+	
+	const styles = StyleSheet.create({
+	  container: {
+	    flex: 1,
+	    justifyContent: 'center',
+	    alignItems: 'center',
+	    backgroundColor: '#F5FCFF',
+	  },
+	  welcome: {
+	    fontSize: 20,
+	    textAlign: 'center',
+	    margin: 10,
+	  },
+	});
+
+
+Crie uma pastada chamda [src].
+
+Mova o arquivo 'App.js' para a pasta [src].
+
+Renomeie o arquivo 'App.js' para 'index.js'.
+
+Edite o arquivo 'index.js' na pasta [raiz] para o caminho da pasta [src].
+
+Dentro da pasta [src] crie outra pasta chamada [serices].
+
+Crie o arquivo 'api.js' na pasta [services].
+
+Faça o download do módulo 'apisauce':
+
+$ npm i --save apisauce
+
+Conteúdo inicial do arquivo 'api.js':
+
+	import { create } from 'apisauce';
+	
+	const api = create({
+	    baseURL: 'http://localhost:3000/api',
+	});
+	
+	export default api;
+
+
+No arquivo 'index.js' dentro da pasta [src], crie um botão de login:
+
+	import React, {Component} from 'react';
+	import api from './services/api'; 
+	
+	import { 
+	  StyleSheet, 
+	  View, 
+	  Button,
+	  Text,
+	  AsyncStorage,
+	  Alert
+	} from 'react-native';
+	
+	export default class App extends Component {
+	  
+	  state = {
+	    loggedInUser: null,
+	    errorMessage: '',
+	  };
+	
+	  signIn = async () => {
+	    try {
+	      const response = await api.post('/login', {
+	        email: 'barbaragordon@gmail.com',
+	        password: '123',
+	      });
+	      
+	      const { token, user } = response.data.data;
+	     
+	      await AsyncStorage.multiSet([
+	        ['@GolangApi:token', token],
+	        ['@GolangApi:user', JSON.stringify(user)],
+	      ]);
+	
+	      this.setState({ loggedInUser: user })
+	
+	      Alert.alert('Logado com sucesso! :)');
+	    } catch (err) {
+	      this.setState({ errorMessage: err.data.message });
+	    }
+	  
+	  };
+	
+	  // método executado todas as vezes que o componente e renderizado
+	  async componentDidMount() { 
+	    const token = await AsyncStorage.getItem('@GolangApi:token');
+	    const user = JSON.parse(await AsyncStorage.getItem('@GolangApi:user'));
+	
+	    if(token && user) {
+	      this.setState({ loggedInUser: user, token: token });
+	    }
+	  }
+	
+	  render() {
+	    return (
+	      <View style={styles.container}>
+	        {!!this.state.loggedInUser && <Text style={styles.loginMessage}>{this.state.loggedInUser.nickname}</Text>}
+	        {!!this.state.errorMessage && <Text>{this.state.errorMessage}</Text>}
+	        <Button onPress={this.signIn} title="Entrar" />
+	      </View>
+	    );
+	  }
+	}
+	
+	const styles = StyleSheet.create({
+	  container: {
+	    flex: 1,
+	    justifyContent: 'center',
+	    alignItems: 'center',
+	    backgroundColor: '#F5FCFF',
+	  },
+	  loginMessage: {
+	    padding: 20,
+	    fontWeight: 'bold',
+	    fontSize: 18,
+	  },
+	});
+	
+
+=====================
+	ERROS
+=====================
+
+modificar a versão do react-native no package.json:
+
+	"react-native": "^0.55.4"
+
+NETWORK_ERROR:
+
+Vamos gerar um link para acessar sua API externamente, 
+que esta rodando no seu pc pela porta 3000 
+(Porta que ele usou no tutorial da API).
+
+Instale o localtunnel: 
+
+$ npm install -g localtunnel
+
+Após a instalaçao, rode o comando:
+
+$ lt -port 3000
+
+Isso ira gerar um url um pouco estranha , 
+mas é ela que vc vai usar , 
+algo parecido com isso :"https://ugly-cat-45.localtunnel.me" 
+
+No Android você não deve utilizar localhost, 
+para isso utilize 10.0.2.2 caso esteja usando o 
+emulador do Android ou 10.0.3.2 para o Genymotion.﻿
+
+Mude o Localhost da API para o Ip da Rede e Também o baseURL.
+
+Resolvi esse problema fazendo o deploy da Api, e utilizando
+a Url fornecida pelo Heroku.
+
+Arquivo 'api.js' utilizando a Api publicada no Heroku:
+
+	import { create } from 'apisauce';
+	
+	const api = create({
+	    baseURL: 'https://vast-dawn-60652.herokuapp.com/api'
+	});
+	
+	// middleware da resposta que vem da Api
+	api.addResponseTransform(response => {
+	    if (!response.ok) throw response;
+	});
+	
+	export default api;
+
+
+No arquivo 'index.js' da pasta [src]:
+
+import React, {Component} from 'react';
+import api from './services/api'; 
+
+import { 
+  StyleSheet, 
+  View, 
+  Button,
+  Text,
+  AsyncStorage,
+  Alert
+} from 'react-native';
+
+export default class App extends Component {
+  
+  state = {
+    loggedInUser: null,
+    errorMessage: '',
+    users: [],
+  };
+
+  signIn = async () => {
+    try {
+      const response = await api.post('/login', {
+        email: 'barbaragordon@gmail.com',
+        password: '123',
+      });
+      
+      // o primeiro atributo 'data' e referente ao APISAUCE, o Segundo atributo 'data' vem da resposta da requisição da API.
+      const { token, user } = response.data.data;
+     
+      await AsyncStorage.multiSet([
+        ['@GolangApi:token', token],
+        ['@GolangApi:user', JSON.stringify(user)],
+      ]);
+
+      this.setState({ loggedInUser: user })
+
+      Alert.alert('Logado com sucesso! :)');
+    } catch (err) {
+      this.setState({ errorMessage: err.data.message });
+    }
+  
+  };
+
+  // método executado todas as vezes que o componente e renderizado
+  async componentDidMount() { 
+    const token = await AsyncStorage.getItem('@GolangApi:token');
+    const user = JSON.parse(await AsyncStorage.getItem('@GolangApi:user'));
+
+    if(token && user) {
+      this.setState({ loggedInUser: user });
+    }
+  }
+
+
+  getUserList = async () => {
+    try {
+
+      const response = await api.get('/users'); 
+  
+      this.setState({ users: response.data.data });
+     
+    } catch(err) {
+
+      message = err.data.message ? err.data.message: err.data; 
+      this.setState({ errorMessage: message });
+    }
+  };
+
+  render() {
+    return (
+      <View style={styles.container}>
+        { !!this.state.loggedInUser && <Text style={styles.loginMessage}>{this.state.loggedInUser.nickname}</Text> }
+        { !!this.state.errorMessage && <Text style={styles.errorMessage}>{this.state.errorMessage}</Text> }
+        { this.state.loggedInUser?  <Button onPress={this.getUserList} title="Load users" /> :  
+          <Button onPress={this.signIn} title="Entrar" /> }
+
+        { this.state.users.filter(user => user._id != this.state.loggedInUser._id).map(user => (
+          <View key={user._id} style={styles.listView}>
+            <Text>{user.nickname}</Text>
+          </View>
+        )) }
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+  },
+  loginMessage: {
+    padding: 20,
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  errorMessage: {
+    padding: 20,
+    fontSize: 15,
+    color: 'red',
+  },
+  listView: {
+    marginTop: 15,
+  }
+});
+
+
+
+Arquivo 'api.js':
+
+
+import { AsyncStorage } from 'react-native';
+import { create } from 'apisauce';
+
+const api = create({
+    baseURL: 'https://vast-dawn-60652.herokuapp.com/api'
+});
+
+// middleware que seta valores antes de fazer a requisição
+api.addAsyncRequestTransform(request => async () => {
+    const token = await AsyncStorage.getItem('@GolangApi:token');
+    if(token) {
+        request.headers['Authorization'] = `Bearer ${token}`;
+    }
+});
+
+// middleware da resposta que vem da Api
+api.addResponseTransform(response => {
+    if (!response.ok) throw response;
+});
+
+export default api;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
